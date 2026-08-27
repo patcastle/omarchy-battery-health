@@ -24,11 +24,7 @@ Panel {
   property string limitError: ""
   readonly property bool limitVisible: limitInfo.state !== "unsupported"
   readonly property string limitDescription: Model.limitDescription(limitInfo.state, limitInfo.policy)
-  readonly property string limitCommand: {
-    if (!root.bar || !root.moduleName) return ""
-    var metadata = root.bar.barWidgetRegistry.metadataFor(root.moduleName)
-    return metadata ? metadata.sourceDir + "/bin/omarchy-battery-limit" : ""
-  }
+  readonly property string limitCommand: decodeURIComponent(String(Qt.resolvedUrl("bin/omarchy-battery-limit")).replace(/^file:\/\//, ""))
   readonly property bool showPercentage: setting("showPercentage", false) === true
   // With the percentage shown the button paints a text block wider than an
   // icon, so the open-panel mark takes the painted width instead of the
