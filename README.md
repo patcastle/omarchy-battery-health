@@ -17,6 +17,10 @@ The plugin does not hard-code an ASUS path or force an 80% threshold. UPower
 reports the policy supported by the laptop, which may be a fixed limit, a
 start/end range, or a firmware-optimized charging mode.
 
+## Panel close-up
+
+![Battery health enabled with a 75–80% firmware charging policy](assets/panel.png)
+
 ## Installing it
 
 ```bash
