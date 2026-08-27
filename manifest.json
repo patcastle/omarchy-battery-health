@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "patcastle.power",
+  "name": "Power + Battery Health",
+  "version": "1.0.0",
+  "author": "Patrick Castiglia",
+  "license": "MIT",
+  "description": "The Omarchy power widget with vendor-neutral battery charge protection.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Power + Battery Health",
+    "description": "Battery health, power profiles, and system stats.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  },
+  "omarchy": {
+    "clonedFrom": "omarchy.power"
+  }
+}
