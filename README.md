@@ -5,6 +5,8 @@ uses the charging policy exposed by your laptop through UPower.
 
 ![The power panel showing battery health and power profile controls](assets/screenshot.png)
 
+_Wallpaper by [Simon Høiberg](https://x.com/SimonHoiberg), featuring Switzerland — our home._
+
 ## What it does
 
 - Shows battery level, capacity, charge cycles, charge rate, and remaining time.
