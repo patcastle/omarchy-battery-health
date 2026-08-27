@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "author": "Patrick Castiglia",
   "license": "MIT",
-  "description": "The Omarchy power widget with vendor-neutral battery charge protection.",
+  "description": "The Omarchy power widget with battery charge protection.",
   "kinds": [
     "bar-widget"
   ],

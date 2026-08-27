@@ -5,7 +5,7 @@ uses the charging policy exposed by your laptop through UPower.
 
 ![The power panel showing battery health and power profile controls](assets/screenshot.png)
 
-_Wallpaper by [Simon Høiberg](https://x.com/SimonHoiberg), featuring Switzerland — our home._
+_Wallpaper by [Simon Høiberg](https://x.com/SimonHoiberg), featuring Switzerland, our home._
 
 ## What it does
 
@@ -15,13 +15,12 @@ _Wallpaper by [Simon Høiberg](https://x.com/SimonHoiberg), featuring Switzerlan
 - Hides the battery-health control when the hardware does not support it.
 - Shows the battery percentage in the bar when you right-click the battery icon.
 
-The plugin does not hard-code an ASUS path or force an 80% threshold. UPower
-reports the policy supported by the laptop, which may be a fixed limit, a
-start/end range, or a firmware-optimized charging mode.
+UPower reports the charging policy supported by the laptop. This may be a fixed
+limit, a start/end range, or a firmware-optimized charging mode.
 
 ## Panel close-up
 
-![Battery health enabled with a 75–80% firmware charging policy](assets/panel.png)
+![Battery health enabled with a 75-80% firmware charging policy](assets/panel.png)
 
 ## Installing it
 
@@ -42,8 +41,7 @@ Requires an Omarchy version with shell plugin support, plus `upower` and
 `busctl`. Those are part of a normal Omarchy installation.
 
 Actual support depends on the laptop firmware, kernel driver, and UPower. The
-plugin talks only to UPower's vendor-neutral D-Bus API; it contains no
-manufacturer-specific code and does not use `sudo` or `pkexec`.
+plugin uses UPower's D-Bus API and does not use `sudo` or `pkexec`.
 
 If another tool already manages your charge threshold, use one or the other so
 they do not fight over the setting.
