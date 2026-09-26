@@ -11,7 +11,8 @@ _Wallpaper by [Simon Høiberg](https://x.com/SimonHoiberg), featuring Switzerlan
 
 - Shows battery level, capacity, charge cycles, charge rate, and remaining time.
 - Switches between the power profiles available on the system.
-- Enables or disables the laptop's firmware-provided charge limit.
+- Lets you choose between preserving battery health (the laptop's firmware
+  charge limit) and charging to 100%.
 - Hides the battery-health control when the hardware does not support it.
 - Shows the battery percentage in the bar when you right-click the battery icon.
 
@@ -32,8 +33,12 @@ The plugin declares itself as a clone of `omarchy.power`, so Omarchy replaces
 the built-in power widget in place and keeps its bar position and settings. You
 do not need to disable or move the original widget manually.
 
-Click the battery icon and use **Preserve battery health**. The control only
-appears when UPower reports charge-threshold support.
+Click the battery icon and choose **Preserve** or **Full charge** in the
+Battery health section. The control only appears when UPower reports
+charge-threshold support. Preserve enables the charge limit your laptop's
+firmware provides; the start/end percentages it uses (for example 75–80%) come
+from the firmware and are reported by UPower, not chosen in the panel. UPower
+does not expose a way to change those values, so the plugin does not either.
 
 ## Compatibility
 

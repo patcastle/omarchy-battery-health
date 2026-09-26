@@ -22,6 +22,12 @@ Panel {
   property bool cursorActive: false
   property string cursorSection: "profiles"
   property string limitError: ""
+  // Keyboard/hover cursor position within the two-choice battery-health row
+  // (0 = "Full charge", 1 = "Preserve"). Purely a cursor, like profileIndex;
+  // the filled/selected styling follows limitActiveIndex, the reported state.
+  property int limitChoiceIndex: 0
+  readonly property var limitChoices: [0, 1]
+  readonly property int limitActiveIndex: Model.limitChoiceIndex(limitInfo.state)
   readonly property bool limitVisible: limitInfo.state !== "unsupported"
   readonly property string limitDescription: Model.limitDescription(limitInfo.state, limitInfo.policy)
   readonly property string limitCommand: decodeURIComponent(String(Qt.resolvedUrl("bin/omarchy-battery-limit")).replace(/^file:\/\//, ""))
@@ -73,8 +79,15 @@ Panel {
       return
     }
 
-    if (limitVisible && ((cursorSection === "limit" && dy > 0) || (cursorSection === "profiles" && dy < 0))) {
+    if (limitVisible && dy !== 0) {
+      // The battery-health section hosts the two-choice limit row; the power
+      // profile section hosts the profile row.
       cursorSection = cursorSection === "limit" ? "profiles" : "limit"
+      return
+    }
+
+    if (cursorSection === "limit") {
+      limitChoiceIndex = Model.selectProfileIndex(limitChoiceIndex, dx !== 0 ? dx : dy, root.limitChoices)
       return
     }
 
@@ -88,7 +101,12 @@ Panel {
     }
 
     if (cursorSection === "profiles") activateSelectedProfile()
-    else setLimit(limitInfo.state === "enabled" ? "disable" : "enable")
+    else setLimitChoice(limitChoiceIndex)
+  }
+
+  function setLimitChoice(index) {
+    if (index === root.limitActiveIndex) return
+    setLimit(index === 1 ? "enable" : "disable")
   }
 
   function setLimit(action) {
@@ -190,7 +208,10 @@ Panel {
     if (targetName === "battery") batteryInfo = next
     else if (targetName === "limit") {
       limitInfo = next
-      if (!cursorActive) cursorSection = next.state !== "unsupported" ? "limit" : "profiles"
+      if (!cursorActive) {
+        limitChoiceIndex = Model.limitChoiceIndex(next.state)
+        cursorSection = next.state !== "unsupported" ? "limit" : "profiles"
+      }
     }
     else systemInfo = next
   }
@@ -241,6 +262,7 @@ Panel {
       refresh()
       var idx = profiles.indexOf(activeProfile)
       profileIndex = idx >= 0 ? idx : 0
+      limitChoiceIndex = Model.limitChoiceIndex(limitInfo.state)
       cursorActive = false
       cursorSection = limitVisible ? "limit" : "profiles"
     }
@@ -531,20 +553,48 @@ Panel {
             fontFamily: root.bar.fontFamily
           }
 
-          Toggle {
+          Text {
             width: parent.width
-            label: "Preserve battery health"
-            description: root.limitDescription
-            checked: root.limitInfo.state === "enabled"
-            enabled: !limitActionProc.running
-            hasCursor: root.cursorActive && root.cursorSection === "limit"
-            foreground: root.bar.foreground
-            fontFamily: root.bar.fontFamily
-            onClicked: root.setLimit(root.limitInfo.state === "enabled" ? "disable" : "enable")
-            onHovered: function(h) {
-              if (h) {
-                root.cursorActive = true
-                root.cursorSection = "limit"
+            text: Model.limitChoiceDescription(root.limitActiveIndex, root.limitInfo.policy)
+            color: Qt.darker(root.bar.foreground, 1.4)
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+          }
+
+          Row {
+            id: limitRow
+            width: parent.width
+            spacing: Style.space(6)
+
+            readonly property real cellWidth: (width - spacing) / 2
+
+            Repeater {
+              model: root.limitChoices
+              Button {
+                required property var modelData
+                required property int index
+                width: limitRow.cellWidth
+                iconText: Model.limitChoiceIcon(index)
+                iconSize: Style.font.title
+                text: Model.limitChoiceName(index)
+                fontSize: Style.font.bodySmall
+                foreground: root.bar.foreground
+                fontFamily: root.bar.fontFamily
+                horizontalPadding: Style.spacing.controlPaddingX
+                verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
+                bordered: true
+                enabled: !limitActionProc.running
+                active: root.limitActiveIndex === index
+                hasCursor: root.cursorActive && root.cursorSection === "limit" && root.limitChoiceIndex === index
+                onClicked: root.setLimitChoice(index)
+                onHovered: function(h) {
+                  if (h) {
+                    root.cursorActive = true
+                    root.cursorSection = "limit"
+                    root.limitChoiceIndex = index
+                  }
+                }
               }
             }
           }

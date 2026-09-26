@@ -12,6 +12,12 @@ const model = require(root + '/Model.js')
 
 if (model.limitDescription('enabled', '75-80') !== 'Starts charging at 75% and stops at 80%') throw new Error('threshold range')
 if (model.limitDescription('disabled', 'firmware') !== 'Use firmware optimized charging') throw new Error('firmware policy')
+if (model.limitChoiceIndex('enabled') !== 1) throw new Error('choice index enabled')
+if (model.limitChoiceIndex('disabled') !== 0) throw new Error('choice index disabled')
+if (model.limitChoiceName(0) !== 'Full charge') throw new Error('choice name full')
+if (model.limitChoiceName(1) !== 'Preserve') throw new Error('choice name preserve')
+if (model.limitChoiceDescription(1, '75-80') !== 'Starts charging at 75% and stops at 80%') throw new Error('choice description preserve')
+if (model.limitChoiceDescription(0, '75-80') !== 'Charges the battery to 100% each cycle') throw new Error('choice description full')
 JS
 
 fixture=$(mktemp -d)
@@ -46,5 +52,7 @@ grep -Fx $'state\tenabled' <<<"$status" >/dev/null
 grep -Fx $'policy\t75-80' <<<"$status" >/dev/null
 "$root/bin/omarchy-battery-limit" disable >/dev/null
 grep -Fx $'/org/freedesktop/UPower/devices/battery_BAT0\tfalse' "$BATTERY_CALL_LOG" >/dev/null
+"$root/bin/omarchy-battery-limit" enable >/dev/null
+grep -Fx $'/org/freedesktop/UPower/devices/battery_BAT0\ttrue' "$BATTERY_CALL_LOG" >/dev/null
 
 echo "All checks passed"

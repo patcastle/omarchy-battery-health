@@ -52,6 +52,24 @@ function limitDescription(state, policy) {
   return (active ? "Stops charging at " : "Limit charging to ") + policy + "%"
 }
 
+function limitChoiceIndex(state) {
+  return state === "enabled" ? 1 : 0
+}
+
+function limitChoiceName(index) {
+  return index === 1 ? "Preserve" : "Full charge"
+}
+
+function limitChoiceDescription(index, policy) {
+  if (index === 1) return limitDescription("enabled", policy)
+  return "Charges the battery to 100% each cycle"
+}
+
+function limitChoiceIcon(index) {
+  if (index === 1) return "󰂄"
+  return "󰁹"
+}
+
 function profileIcon(name) {
   if (name === "power-saver") return "󰌪"
   if (name === "balanced") return "󰊚"
@@ -110,6 +128,10 @@ if (typeof module !== "undefined") {
     parseKeyValue: parseKeyValue,
     parseProfiles: parseProfiles,
     limitDescription: limitDescription,
+    limitChoiceIndex: limitChoiceIndex,
+    limitChoiceName: limitChoiceName,
+    limitChoiceDescription: limitChoiceDescription,
+    limitChoiceIcon: limitChoiceIcon,
     profileIcon: profileIcon,
     batteryFraction: batteryFraction,
     chargeThresholdActive: chargeThresholdActive,
