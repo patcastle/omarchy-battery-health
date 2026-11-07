@@ -18,6 +18,11 @@ _Wallpaper by [Simon Høiberg](https://x.com/SimonHoiberg), featuring Switzerlan
 UPower reports the charging policy supported by the laptop. This may be a fixed
 limit, a start/end range, or a firmware-optimized charging mode.
 
+Charging status follows the battery state reported by UPower. Slow charging
+remains charging, and a paused charge shows "Not charging" without guessing
+its cause. A partial charge reported as full by the firmware also shows
+"Not charging". The battery-health control shows the configured policy separately.
+
 ## Panel close-up
 
 ![Battery health enabled with a 75-80% firmware charging policy](assets/panel.png)

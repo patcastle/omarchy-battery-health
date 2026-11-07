@@ -40,7 +40,9 @@ Panel {
       Charging: UPowerDeviceState.Charging,
       Discharging: UPowerDeviceState.Discharging,
       FullyCharged: UPowerDeviceState.FullyCharged,
-      PendingCharge: UPowerDeviceState.PendingCharge
+      PendingCharge: UPowerDeviceState.PendingCharge,
+      PendingDischarge: UPowerDeviceState.PendingDischarge,
+      Empty: UPowerDeviceState.Empty
     }
   }
 
@@ -55,12 +57,11 @@ Panel {
 
   function batteryIcon() {
     var device = UPower.displayDevice
-    return Model.batteryIcon(device, root.discharging, upowerStates())
+    return Model.batteryIcon(device, root.batteryState)
   }
 
   function modeLabel() {
-    var device = UPower.displayDevice
-    return Model.modeLabel(device, root.discharging, upowerStates())
+    return Model.modeLabel(root.batteryState)
   }
 
   function profileIcon(name) {
@@ -98,30 +99,16 @@ Panel {
     limitActionProc.running = true
   }
 
-  readonly property bool fullyCharged: {
-    var device = UPower.displayDevice
-    return device && device.isPresent && device.state === UPowerDeviceState.FullyCharged && !root.chargeThresholdActive
-  }
-  readonly property bool discharging: {
-    var device = UPower.displayDevice
-    return !!(device && device.isPresent && UPower.onBattery)
-  }
-  readonly property bool chargeThresholdActive: {
-    var device = UPower.displayDevice
-    return Model.chargeThresholdActive(device, root.discharging, upowerStates())
-  }
-  readonly property bool batteryFull: fullyCharged || (!root.discharging && batteryFraction >= 1)
-  readonly property bool batteryFlowIdle: batteryFull || chargeThresholdActive
+  readonly property string batteryState: Model.batteryState(UPower.displayDevice, upowerStates())
+  readonly property bool fullyCharged: batteryState === "full"
+  readonly property bool discharging: batteryState === "discharging"
+  readonly property bool charging: batteryState === "charging"
+  readonly property bool batteryFlowIdle: !charging && !discharging
 
   // 0..1 charge level, used by the visual progress bar.
   readonly property real batteryFraction: {
     var d = UPower.displayDevice
     return Model.batteryFraction(d)
-  }
-
-  readonly property bool charging: {
-    var d = UPower.displayDevice
-    return d && d.isPresent && !UPower.onBattery && !root.batteryFlowIdle
   }
 
   readonly property color batteryFillColor: {
@@ -211,7 +198,7 @@ Panel {
 
   function setProfile(profile) {
     if (!profile || actionProc.running) return
-    actionProc.command = ["omarchy-powerprofiles-set", root.discharging ? "battery" : "ac", profile]
+    actionProc.command = ["omarchy-powerprofiles-set", UPower.onBattery ? "battery" : "ac", profile]
     actionProc.running = true
   }
 
@@ -505,12 +492,12 @@ Panel {
             width: (parent.width - parent.spacing) / 2
             spacing: Style.spacing.labelGap
             InfoPair {
-              label: root.chargeThresholdActive ? "Charge limit" : (root.discharging ? "Time left" : "Time to full")
-              value: root.chargeThresholdActive ? (root.batteryInfo.threshold || "-") : (root.batteryFlowIdle ? "-" : (root.batteryInfo.time || "—"))
+              label: root.discharging ? "Time left" : "Time to full"
+              value: root.batteryFlowIdle ? "-" : (root.batteryInfo.time || "—")
             }
             InfoPair {
-              label: root.chargeThresholdActive ? "Battery state" : (root.discharging ? "Discharging" : "Charging")
-              value: root.chargeThresholdActive ? "Holding" : (root.batteryFull ? "-" : (root.batteryInfo.rate || ""))
+              label: root.batteryFlowIdle ? "State" : (root.discharging ? "Discharging" : "Charging")
+              value: root.batteryFlowIdle ? root.modeLabel() : (root.batteryInfo.rate || "—")
             }
           }
         }

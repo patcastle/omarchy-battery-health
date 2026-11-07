@@ -47,4 +47,6 @@ grep -Fx $'policy\t75-80' <<<"$status" >/dev/null
 "$root/bin/omarchy-battery-limit" disable >/dev/null
 grep -Fx $'/org/freedesktop/UPower/devices/battery_BAT0\tfalse' "$BATTERY_CALL_LOG" >/dev/null
 
+node --test "$@" "$root"/tests/*.test.js
+
 echo "All checks passed"
