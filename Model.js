@@ -38,6 +38,26 @@ function parseProfiles(raw, previousIndex) {
   }
 }
 
+function parseLimitStatus(raw, previous, exitCode) {
+  var next = parseKeyValue(raw)
+  if (exitCode === 0 && (next.state === "enabled" || next.state === "disabled" || next.state === "unsupported") && next.policy) {
+    return { state: next.state, policy: next.policy, stale: false }
+  }
+
+  // Retain the last known state for display, but never treat it as current.
+  var last = previous || {}
+  return { state: last.state || "unavailable", policy: last.policy || "unknown", stale: true }
+}
+
+function limitStatusDescription(info) {
+  if (info.stale) {
+    var last = info.state === "enabled" ? " Last known state: on."
+      : info.state === "disabled" ? " Last known state: off." : ""
+    return "Battery protection status unavailable." + last + " Retrying…"
+  }
+  return limitDescription(info.state, info.policy)
+}
+
 function limitDescription(state, policy) {
   var active = state === "enabled"
   if (policy === "firmware") return (active ? "Uses" : "Use") + " firmware optimized charging"
@@ -109,6 +129,8 @@ if (typeof module !== "undefined") {
     selectProfileIndex: selectProfileIndex,
     parseKeyValue: parseKeyValue,
     parseProfiles: parseProfiles,
+    parseLimitStatus: parseLimitStatus,
+    limitStatusDescription: limitStatusDescription,
     limitDescription: limitDescription,
     profileIcon: profileIcon,
     batteryFraction: batteryFraction,

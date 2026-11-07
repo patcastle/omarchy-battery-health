@@ -32,8 +32,13 @@ The plugin declares itself as a clone of `omarchy.power`, so Omarchy replaces
 the built-in power widget in place and keeps its bar position and settings. You
 do not need to disable or move the original widget manually.
 
-Click the battery icon and use **Preserve battery health**. The control only
-appears when UPower reports charge-threshold support.
+Click the battery icon and use **Preserve battery health**. The plugin hides
+the control when UPower confirms that the hardware does not support charge limits.
+
+If a status query fails, the plugin shows “Battery protection status unavailable”
+and disables the toggle. It labels any previous state as the last known state.
+The plugin retries every five seconds while the panel is open and restores the
+control after a successful query.
 
 ## Compatibility
 
@@ -61,6 +66,23 @@ Disabling or removing it restores the built-in `omarchy.power` widget.
 omarchy plugin validate .
 ./test.sh
 ```
+
+For VS Code Auto Attach or a JavaScript Debug Terminal, run the tests in one
+process to avoid Node's inspector startup error:
+
+```bash
+./test.sh --test-isolation=none
+```
+
+This option requires Node 23.6 or later and keeps debugging available.
+Without this option, each test file runs in a separate process.
+
+To debug in VS Code, open this repository as the workspace folder.
+Set a breakpoint in `Model.js` or a JavaScript test, then select **Debug all tests**
+in Run and Debug and press **F5**.
+To run one test file, open that file and select **Debug current test file**.
+These configurations debug JavaScript tests and model functions.
+The popup runs separately in Quickshell, and the charge helper runs in Bash.
 
 This is a clone of Omarchy's power widget while the corresponding upstream
 change is under review in [basecamp/omarchy#8579](https://github.com/basecamp/omarchy/pull/8579).

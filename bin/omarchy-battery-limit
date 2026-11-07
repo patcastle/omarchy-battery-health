@@ -14,31 +14,50 @@ case "$*" in
     ;;
 esac
 
+status_unavailable() {
+  if [[ $action == status && $shell_output == true ]]; then
+    printf 'state\tunavailable\npolicy\tunknown\n'
+  fi
+  echo "Battery protection status unavailable" >&2
+  exit 1
+}
+
 upower_property() {
-  local raw value
+  local raw
 
   raw=$(busctl get-property org.freedesktop.UPower "$1" org.freedesktop.UPower.Device "$2" 2>/dev/null) || return 1
-  read -r _ value <<<"$raw"
-  value=${value#\"}
-  value=${value%\"}
-  printf '%s\n' "$value"
+  case "$2" in
+    ChargeThresholdSupported | ChargeThresholdEnabled)
+      [[ $raw =~ ^b\ (true|false)$ ]] || return 1
+      ;;
+    *)
+      [[ $raw =~ ^u\ ([0-9]+)$ ]] || return 1
+      ;;
+  esac
+  printf '%s\n' "${BASH_REMATCH[1]}"
 }
+
+# A failed query is not evidence that the hardware lacks support. Read the
+# complete status before allowing any writes, including on multi-battery systems.
+devices=$(upower -e 2>/dev/null) || status_unavailable
 
 declare -a batteries=()
 enabled=true
 policy=unknown
 
 while IFS= read -r device; do
-  [[ $device != */DisplayDevice ]] || continue
-  [[ $(upower_property "$device" ChargeThresholdSupported || true) == true ]] || continue
+  [[ -n $device && $device != */DisplayDevice ]] || continue
+  supported=$(upower_property "$device" ChargeThresholdSupported) || status_unavailable
+  [[ $supported == true ]] || continue
 
   batteries+=("$device")
-  [[ $(upower_property "$device" ChargeThresholdEnabled || true) == true ]] || enabled=false
+  device_enabled=$(upower_property "$device" ChargeThresholdEnabled) || status_unavailable
+  [[ $device_enabled == true ]] || enabled=false
 
   if [[ $policy == unknown ]]; then
-    settings=$(upower_property "$device" ChargeThresholdSettingsSupported || true)
-    start=$(upower_property "$device" ChargeStartThreshold || true)
-    end=$(upower_property "$device" ChargeEndThreshold || true)
+    settings=$(upower_property "$device" ChargeThresholdSettingsSupported) || status_unavailable
+    start=$(upower_property "$device" ChargeStartThreshold) || status_unavailable
+    end=$(upower_property "$device" ChargeEndThreshold) || status_unavailable
 
     if [[ $settings =~ ^[0-9]+$ ]] && (( (settings & 2) != 0 )) && [[ $end =~ ^[0-9]+$ ]]; then
       if (( (settings & 1) != 0 )) && [[ $start =~ ^[0-9]+$ ]] && (( start < end )); then
@@ -50,7 +69,7 @@ while IFS= read -r device; do
       policy=firmware
     fi
   fi
-done < <(upower -e 2>/dev/null)
+done <<<"$devices"
 
 if (( ${#batteries[@]} == 0 )); then
   state=unsupported
