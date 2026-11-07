@@ -14,7 +14,7 @@ Panel {
   // permits — needed for the togglePercentage method below.
   manageIpc: false
   property var batteryInfo: ({})
-  property var limitInfo: ({ state: "unsupported", policy: "unknown" })
+  property var limitInfo: ({ state: "unavailable", policy: "unknown", stale: true })
   property var systemInfo: ({})
   property var profiles: []
   property string activeProfile: ""
@@ -22,8 +22,9 @@ Panel {
   property bool cursorActive: false
   property string cursorSection: "profiles"
   property string limitError: ""
-  readonly property bool limitVisible: limitInfo.state !== "unsupported"
-  readonly property string limitDescription: Model.limitDescription(limitInfo.state, limitInfo.policy)
+  readonly property bool limitVisible: limitInfo.stale || limitInfo.state !== "unsupported"
+  readonly property bool limitAvailable: !limitInfo.stale && (limitInfo.state === "enabled" || limitInfo.state === "disabled")
+  readonly property string limitDescription: Model.limitStatusDescription(limitInfo)
   readonly property string limitCommand: decodeURIComponent(String(Qt.resolvedUrl("bin/omarchy-battery-limit")).replace(/^file:\/\//, ""))
   readonly property bool showPercentage: setting("showPercentage", false) === true
   // With the percentage shown the button paints a text block wider than an
@@ -92,7 +93,7 @@ Panel {
   }
 
   function setLimit(action) {
-    if (!action || !limitCommand || limitActionProc.running) return
+    if (!limitAvailable || !action || !limitCommand || limitActionProc.running) return
     limitError = ""
     limitActionProc.command = [limitCommand, action]
     limitActionProc.running = true
@@ -188,11 +189,13 @@ Panel {
     // around AC plug/unplug events. Avoids the section collapsing mid-transition.
     if (Object.keys(next).length === 0) return
     if (targetName === "battery") batteryInfo = next
-    else if (targetName === "limit") {
-      limitInfo = next
-      if (!cursorActive) cursorSection = next.state !== "unsupported" ? "limit" : "profiles"
-    }
     else systemInfo = next
+  }
+
+  function updateLimitStatus(raw, exitCode) {
+    limitInfo = Model.parseLimitStatus(raw, limitInfo, exitCode)
+    if (!cursorActive || (!limitVisible && cursorSection === "limit"))
+      cursorSection = limitVisible ? "limit" : "profiles"
   }
 
   function updateProfiles(raw) {
@@ -261,7 +264,8 @@ Panel {
   Process {
     id: limitProc
     command: root.limitCommand ? [root.limitCommand, "status", "--shell"] : []
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.updateKeyValue(text, "limit") }
+    stdout: StdioCollector { id: limitOutput; waitForEnd: true }
+    onExited: function(exitCode) { root.updateLimitStatus(limitOutput.text, exitCode) }
   }
 
   Process {
@@ -534,10 +538,11 @@ Panel {
           Toggle {
             width: parent.width
             label: "Preserve battery health"
-            description: root.limitDescription
+            description: root.limitInfo.stale ? "" : root.limitDescription
             checked: root.limitInfo.state === "enabled"
-            enabled: !limitActionProc.running
-            hasCursor: root.cursorActive && root.cursorSection === "limit"
+            enabled: root.limitAvailable && !limitActionProc.running
+            opacity: enabled ? 1 : 0.45
+            hasCursor: enabled && root.cursorActive && root.cursorSection === "limit"
             foreground: root.bar.foreground
             fontFamily: root.bar.fontFamily
             onClicked: root.setLimit(root.limitInfo.state === "enabled" ? "disable" : "enable")
@@ -547,6 +552,18 @@ Panel {
                 root.cursorSection = "limit"
               }
             }
+          }
+
+          // Keep the explanation readable while the control itself is dimmed.
+          Text {
+            visible: root.limitInfo.stale
+            width: parent.width
+            text: root.limitDescription
+            textFormat: Text.PlainText
+            color: root.bar.foreground
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
           }
 
           Text {
