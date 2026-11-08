@@ -63,44 +63,44 @@ function batteryFraction(device) {
   return device && device.isPresent ? Math.max(0, Math.min(1, device.percentage)) : 0
 }
 
-function chargeThresholdActive(device, onBattery, states) {
+// UPower reports battery flow separately from the configured charging policy.
+// A low rate or a long estimate does not tell us why charging has slowed down.
+function batteryState(device, states) {
   var d = device || {}
   var s = states || {}
-  if (!(d && d.isPresent && !onBattery)) return false
+  if (!d.isPresent) return "unavailable"
+  if (d.state === undefined || d.state === null) return "unknown"
 
-  var fraction = batteryFraction(d)
-  if (d.state === s.Discharging) return false
-  if (d.state === s.PendingCharge) return true
-  if (d.state === s.FullyCharged && fraction < 0.99) return true
-  if (d.state !== s.Charging || fraction >= 0.99) return false
-
-  return Number(d.changeRate || 0) <= 0.2 || Number(d.timeToFull || 0) >= 8 * 60 * 60
+  if (d.state === s.Charging) return "charging"
+  if (d.state === s.Discharging) return "discharging"
+  if (d.state === s.PendingCharge) return "not-charging"
+  if (d.state === s.PendingDischarge) return "not-discharging"
+  if (d.state === s.Empty) return "empty"
+  // Firmware can report FullyCharged below full capacity. Describe the stopped
+  // flow without claiming that a charge limit caused it.
+  if (d.state === s.FullyCharged) return batteryFraction(d) >= 0.99 ? "full" : "not-charging"
+  return "unknown"
 }
 
-function batteryIcon(device, onBattery, states) {
+function batteryIcon(device, state) {
   var d = device || {}
   if (!d.isPresent) return ""
 
   var chargingIcons = ["󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"]
   var defaultIcons = ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
-  var index = Math.max(0, Math.min(9, Math.floor(d.percentage * 10)))
-  var threshold = chargeThresholdActive(d, onBattery, states)
-
-  if (threshold) return defaultIcons[index]
-  if (d.state === states.FullyCharged) return "󰂅"
-  if (!onBattery) return chargingIcons[index]
-  return defaultIcons[index]
+  var index = Math.max(0, Math.min(9, Math.floor(batteryFraction(d) * 10)))
+  return state === "charging" ? chargingIcons[index] : defaultIcons[index]
 }
 
-function modeLabel(device, onBattery, states) {
-  var d = device || {}
-  if (!d.isPresent) return ""
-
-  var percentage = d.isPresent ? d.percentage : 0
-  if (chargeThresholdActive(d, onBattery, states)) return "Threshold"
-  if (onBattery) return "On battery"
-  if (!onBattery && percentage >= 1) return "Fully charged"
-  return "Charging"
+function modeLabel(state) {
+  if (state === "charging") return "Charging"
+  if (state === "discharging") return "On battery"
+  if (state === "full") return "Fully charged"
+  if (state === "not-charging") return "Not charging"
+  if (state === "not-discharging") return "Not discharging"
+  if (state === "empty") return "Empty"
+  if (state === "unavailable") return ""
+  return "Unknown"
 }
 
 if (typeof module !== "undefined") {
@@ -112,7 +112,7 @@ if (typeof module !== "undefined") {
     limitDescription: limitDescription,
     profileIcon: profileIcon,
     batteryFraction: batteryFraction,
-    chargeThresholdActive: chargeThresholdActive,
+    batteryState: batteryState,
     batteryIcon: batteryIcon,
     modeLabel: modeLabel
   }
